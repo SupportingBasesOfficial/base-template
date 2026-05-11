@@ -1,6 +1,14 @@
 {
-  "name": "base-template",
+  "name": "@supporting-bases/base-template",
+  "version": "1.0.0",
+  "description": "The definitive MEGA-TECH monorepo template. Engineered for absolute scale and resilience using Turborepo, Next.js 15, Tailwind v4, and Supabase.",
+  "author": "SupportingBasesOficial",
+  "license": "MIT",
   "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com"
+  },
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev",
