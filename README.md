@@ -1,159 +1,189 @@
-# Turborepo starter
+# Base Template Universal
 
-This Turborepo starter is maintained by the Turborepo core team.
+> Monorepo Turborepo + Next.js 16 + Supabase + TypeScript.  
+> Do vendedor de brigadeiro ao sistema da NASA — mesma fundação.
 
-## Using this example
+---
 
-Run the following command:
+## Stack
 
-```sh
-npx create-turbo@latest
+| Camada | Tecnologia | Papel |
+|--------|-----------|-------|
+| **Build** | Turborepo | Orquestração de monorepo |
+| **App** | Next.js 16.2 | Framework React (App Router) |
+| **UI** | shadcn/ui + Tailwind v4 | Design system (Radix primitives) |
+| **Data** | Supabase | PostgreSQL + Auth + Storage + Realtime |
+| **Types** | TypeScript 5.9 | Tipagem end-to-end com tipos gerados do banco |
+| **Test** | Vitest | Test runner com cobertura V8 |
+| **DX** | Husky + lint-staged | Pre-commit guards |
+| **CI** | GitHub Actions | lint → types → build → test |
+
+---
+
+## Protocolo de Boot
+
+```powershell
+# 1. Clone e instale
+git clone <repo-url> && cd base-template
+pnpm install
+
+# 2. Suba o Supabase local (requer Docker)
+npx supabase start
+
+# 3. Configure variáveis de ambiente
+cp apps/web/env.example apps/web/.env.local
+# Preencha NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+# 4. Aplique migrations e sincronize tipos
+npx supabase db reset
+.\sync-db.ps1
+
+# 5. Desenvolva
+pnpm dev          # http://localhost:3000
 ```
 
-## What's inside?
+---
 
-This Turborepo includes the following packages/apps:
+## Estrutura do Projeto
 
-### Apps and Packages
-
-- `docs`: a [Next.js](https://nextjs.org/) app
-- `web`: another [Next.js](https://nextjs.org/) app
-- `@repo/ui`: a stub React component library shared by both `web` and `docs` applications
-- `@repo/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
-
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
-
-### Utilities
-
-This Turborepo has some additional tools already setup for you:
-
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
-
-### Build
-
-To build all apps and packages, run the following command:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
-
-```sh
-cd my-turborepo
-turbo build
+```
+base-template/
+├── apps/
+│   └── web/                        # Next.js App Router
+│       ├── app/
+│       │   ├── api/health/         # Health check endpoint
+│       │   └── page.tsx            # Landing page
+│       ├── env.ts                  # Validação de env (build-time)
+│       ├── middleware.ts           # Auth session refresh
+│       └── postcss.config.mjs      # Tailwind v4
+│
+├── packages/
+│   ├── supabase/                   # @repo/supabase
+│   │   └── src/
+│   │       ├── client.ts           # createClient() — browser
+│   │       ├── server.ts           # createClient() — server
+│   │       ├── middleware.ts       # updateSession()
+│   │       └── types.ts            # Result<T>, ok(), err(), Database
+│   ├── ui/                         # @repo/ui (shadcn/Radix primitives)
+│   │   └── src/
+│   │       ├── button.tsx
+│   │       ├── card.tsx
+│   │       ├── input.tsx
+│   │       └── lib/utils.ts        # cn() utility
+│   ├── tailwind-config/            # @repo/tailwind-config (preset)
+│   ├── typescript-config/          # TS configs + database.types.ts
+│   └── eslint-config/              # ESLint configs
+│
+├── supabase/
+│   ├── migrations/                 # Migrations versionadas
+│   └── SCHEMA.md                   # Documentação do banco
+│
+├── .github/workflows/ci.yml        # CI pipeline
+├── vitest.config.ts                # Config global de testes
+├── sync-db.ps1                     # Sync de tipos
+└── docs/ARCHITECTURE.md            # Guias de escala (MEGA-TECH)
 ```
 
-Without global `turbo`, use your package manager:
+---
 
-```sh
-cd my-turborepo
-npx turbo build
-pnpm dlx turbo build
-pnpm exec turbo build
+## Packages
+
+### `@repo/supabase`
+
+Client factories tipadas. Nunca importe `@supabase/ssr` diretamente nos apps.
+
+```typescript
+// Client Component
+import { createClient } from "@repo/supabase/client";
+const supabase = createClient();
+
+// Server Component / Route Handler
+import { createClient } from "@repo/supabase/server";
+const supabase = await createClient();
+
+// Result Pattern — sem undefined inesperado
+import { ok, err, type Result } from "@repo/supabase/types";
+async function getUser(id: string): Promise<Result<User>> {
+  const { data, error } = await supabase.from("users").select().eq("id", id).single();
+  if (error) return err(error.message, error.code);
+  return ok(data);
+}
 ```
 
-You can build a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
+### `@repo/ui`
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
+Componentes primitivos (Button, Card, Input). Seguem o padrão shadcn/ui.
 
-```sh
-turbo build --filter=docs
+```typescript
+import { Button } from "@repo/ui/button";
+import { Card, CardHeader, CardTitle, CardContent } from "@repo/ui/card";
+import { cn } from "@repo/ui/lib/utils";
 ```
 
-Without global `turbo`:
+### `@repo/tailwind-config`
 
-```sh
-npx turbo build --filter=docs
-pnpm exec turbo build --filter=docs
-pnpm exec turbo build --filter=docs
+Preset compartilhado. Cada app importa e pode sobrescrever tokens.
+
+---
+
+## Fluxo de Desenvolvimento
+
+### Criar uma tabela
+
+```powershell
+# 1. Gerar migration
+npx supabase migration new create_minha_tabela
+
+# 2. Editar (seguir protocolo do SCHEMA.md)
+# 3. Aplicar
+npx supabase db reset
+
+# 4. Sync tipos
+.\sync-db.ps1
+
+# 5. Atualizar SCHEMA.md
 ```
 
-### Develop
+### Adicionar componente UI
 
-To develop all apps and packages, run the following command:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
-
-```sh
-cd my-turborepo
-turbo dev
+```powershell
+# Adicione em packages/ui/src/novo-componente.tsx
+# Exporte em packages/ui/package.json (exports)
+# Use no app: import { Comp } from "@repo/ui/novo-componente"
 ```
 
-Without global `turbo`, use your package manager:
+---
 
-```sh
-cd my-turborepo
-npx turbo dev
-pnpm exec turbo dev
-pnpm exec turbo dev
-```
+## Scripts
 
-You can develop a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
+| Script | Descrição |
+|--------|-----------|
+| `pnpm dev` | Dev server (todos os apps) |
+| `pnpm build` | Build de produção |
+| `pnpm lint` | ESLint em todo o monorepo |
+| `pnpm check-types` | Type-check em todos os packages |
+| `pnpm test` | Vitest em modo watch |
+| `pnpm test:run` | Vitest single run (CI) |
+| `pnpm format` | Prettier em tudo |
+| `.\sync-db.ps1` | Gera tipos TypeScript do banco |
+| `npx supabase start` | Sobe Supabase local |
+| `npx supabase db reset` | Reset + aplica migrations |
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
+---
 
-```sh
-turbo dev --filter=web
-```
+## Princípios
 
-Without global `turbo`:
+1. **YAGNI** — Se não serve ao brigadeiro E à NASA no dia 1, não entra no código.
+2. **Migrations** — Zero SQL manual. Toda mudança via `supabase/migrations/`.
+3. **RLS** — Toda tabela com Row Level Security. Sem exceção.
+4. **Tipos** — `database.types.ts` é a fonte de verdade. `any` é proibido.
+5. **Packages** — Código compartilhado vive em `packages/`, nunca duplicado em `apps/`.
+6. **Env seguro** — Variáveis validadas no build. Se faltar, o app não sobe.
 
-```sh
-npx turbo dev --filter=web
-pnpm exec turbo dev --filter=web
-pnpm exec turbo dev --filter=web
-```
+---
 
-### Remote Caching
+## Documentação Complementar
 
-> [!TIP]
-> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
-
-Turborepo can use a technique known as [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
-
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
-
-```sh
-cd my-turborepo
-turbo login
-```
-
-Without global `turbo`, use your package manager:
-
-```sh
-cd my-turborepo
-npx turbo login
-pnpm exec turbo login
-pnpm exec turbo login
-```
-
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
-
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
-
-```sh
-turbo link
-```
-
-Without global `turbo`:
-
-```sh
-npx turbo link
-pnpm exec turbo link
-pnpm exec turbo link
-```
-
-## Useful Links
-
-Learn more about the power of Turborepo:
-
-- [Tasks](https://turborepo.dev/docs/crafting-your-repository/running-tasks)
-- [Caching](https://turborepo.dev/docs/crafting-your-repository/caching)
-- [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching)
-- [Filtering](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters)
-- [Configuration Options](https://turborepo.dev/docs/reference/configuration)
-- [CLI Usage](https://turborepo.dev/docs/reference/command-line-reference)
+- [`supabase/SCHEMA.md`](./supabase/SCHEMA.md) — Banco de dados e protocolo de tabelas
+- [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) — Guias de escala para projetos MEGA-TECH
+- [`apps/web/env.example`](./apps/web/env.example) — Variáveis de ambiente necessárias

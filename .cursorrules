@@ -1,0 +1,9 @@
+# Regras de Escala Mega-Tech
+
+- **Stack:** Next.js (App Router), Tailwind CSS, Supabase, TypeScript.
+- **Banco de Dados:** Use sempre a CLI do Supabase. Proibido criar tabelas via SQL manual no código sem gerar migration.
+- **Pastas:** 
+  - Apps estão em /apps.
+  - Componentes compartilhados em /packages/ui.
+- **Identidade:** Use nomes de funções descritivos. Código em Inglês, comentários em Português.
+- **Segurança:** Sempre verifique se o Row Level Security (RLS) está planejado para novas tabelas.
