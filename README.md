@@ -1,22 +1,22 @@
 # Base Template Universal
 
-> Monorepo Turborepo + Next.js 16 + Supabase + TypeScript.  
+> Monorepo Turborepo + Next.js 15 + Supabase + TypeScript.  
 > Do vendedor de brigadeiro ao sistema da NASA — mesma fundação.
 
 ---
 
 ## Stack
 
-| Camada | Tecnologia | Papel |
-|--------|-----------|-------|
-| **Build** | Turborepo | Orquestração de monorepo |
-| **App** | Next.js 16.2 | Framework React (App Router) |
-| **UI** | shadcn/ui + Tailwind v4 | Design system (Radix primitives) |
-| **Data** | Supabase | PostgreSQL + Auth + Storage + Realtime |
-| **Types** | TypeScript 5.9 | Tipagem end-to-end com tipos gerados do banco |
-| **Test** | Vitest | Test runner com cobertura V8 |
-| **DX** | Husky + lint-staged | Pre-commit guards |
-| **CI** | GitHub Actions | lint → types → build → test |
+| Camada    | Tecnologia              | Papel                                         |
+| --------- | ----------------------- | --------------------------------------------- |
+| **Build** | Turborepo               | Orquestração de monorepo                      |
+| **App**   | Next.js 15.3            | Framework React (App Router)                  |
+| **UI**    | shadcn/ui + Tailwind v3 | Design system (Radix primitives)              |
+| **Data**  | Supabase                | PostgreSQL + Auth + Storage + Realtime        |
+| **Types** | TypeScript 5.9          | Tipagem end-to-end com tipos gerados do banco |
+| **Test**  | Vitest                  | Test runner com cobertura V8                  |
+| **DX**    | Husky + lint-staged     | Pre-commit guards                             |
+| **CI**    | GitHub Actions          | lint → types → build → test                   |
 
 ---
 
@@ -31,8 +31,14 @@ pnpm install
 npx supabase start
 
 # 3. Configure variáveis de ambiente
-cp apps/web/env.example apps/web/.env.local
+cp apps/web/.env.example apps/web/.env
 # Preencha NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+**Nota sobre arquivos de ambiente:**
+- `.env.example` - Blueprint público, commitado no git (sem valores reais)
+- `.env` - Arquivo de desenvolvimento local, **nunca commitado** (contém secrets reais)
+- `.env.local` - Opcional para sobrescrever valores locais, **nunca commitado**
+- Os scripts `sync-db` aceitam tanto `.env` quanto `.env.local`
 
 # 4. Aplique migrations e sincronize tipos
 npx supabase db reset
@@ -52,10 +58,14 @@ base-template/
 │   └── web/                        # Next.js App Router
 │       ├── app/
 │       │   ├── api/health/         # Health check endpoint
+│       │   ├── layout.tsx          # Root layout
 │       │   └── page.tsx            # Landing page
 │       ├── env.ts                  # Validação de env (build-time)
 │       ├── middleware.ts           # Auth session refresh
-│       └── postcss.config.mjs      # Tailwind v4
+│       ├── postcss.config.mjs      # Tailwind config
+│       ├── tsconfig.json           # TypeScript config
+│       ├── next.config.mjs         # Next.js config
+│       └── package.json            # Dependencies
 │
 ├── packages/
 │   ├── supabase/                   # @repo/supabase
@@ -63,15 +73,13 @@ base-template/
 │   │       ├── client.ts           # createClient() — browser
 │   │       ├── server.ts           # createClient() — server
 │   │       ├── middleware.ts       # updateSession()
-│   │       └── types.ts            # Result<T>, ok(), err(), Database
-│   ├── ui/                         # @repo/ui (shadcn/Radix primitives)
+│   │       ├── types.ts            # Result<T>, ok(), err(), Database
+│   │       └── database.types.ts   # Tipos gerados do banco
+│   ├── ui/                         # @repo/ui (primitivos)
 │   │   └── src/
-│   │       ├── button.tsx
-│   │       ├── card.tsx
-│   │       ├── input.tsx
 │   │       └── lib/utils.ts        # cn() utility
-│   ├── tailwind-config/            # @repo/tailwind-config (preset)
-│   ├── typescript-config/          # TS configs + database.types.ts
+│   ├── tailwind-config/            # @repo/tailwind-config (globals.css)
+│   ├── typescript-config/          # TS configs
 │   └── eslint-config/              # ESLint configs
 │
 ├── supabase/
@@ -104,7 +112,11 @@ const supabase = await createClient();
 // Result Pattern — sem undefined inesperado
 import { ok, err, type Result } from "@repo/supabase/types";
 async function getUser(id: string): Promise<Result<User>> {
-  const { data, error } = await supabase.from("users").select().eq("id", id).single();
+  const { data, error } = await supabase
+    .from("users")
+    .select()
+    .eq("id", id)
+    .single();
   if (error) return err(error.message, error.code);
   return ok(data);
 }
@@ -112,17 +124,15 @@ async function getUser(id: string): Promise<Result<User>> {
 
 ### `@repo/ui`
 
-Componentes primitivos (Button, Card, Input). Seguem o padrão shadcn/ui.
+Utilitário de composição de classes (cn). Adicione componentes primitivos (Button, Card, Input) conforme necessário seguindo o padrão shadcn/ui.
 
 ```typescript
-import { Button } from "@repo/ui/button";
-import { Card, CardHeader, CardTitle, CardContent } from "@repo/ui/card";
 import { cn } from "@repo/ui/lib/utils";
 ```
 
 ### `@repo/tailwind-config`
 
-Preset compartilhado. Cada app importa e pode sobrescrever tokens.
+Base CSS compartilhada. Cada app importa via postcss.config.mjs. Adicione tokens de design específicos do projeto ao instanciar.
 
 ---
 
@@ -146,28 +156,26 @@ npx supabase db reset
 
 ### Adicionar componente UI
 
-```powershell
-# Adicione em packages/ui/src/novo-componente.tsx
-# Exporte em packages/ui/package.json (exports)
-# Use no app: import { Comp } from "@repo/ui/novo-componente"
-```
+Adicione componentes primitivos (Button, Card, Input) em `packages/ui/src/` seguindo o padrão shadcn/ui quando necessário para o seu projeto. O template fornece apenas o utilitário `cn()` para composição de classes.
 
 ---
 
 ## Scripts
 
-| Script | Descrição |
-|--------|-----------|
-| `pnpm dev` | Dev server (todos os apps) |
-| `pnpm build` | Build de produção |
-| `pnpm lint` | ESLint em todo o monorepo |
-| `pnpm check-types` | Type-check em todos os packages |
-| `pnpm test` | Vitest em modo watch |
-| `pnpm test:run` | Vitest single run (CI) |
-| `pnpm format` | Prettier em tudo |
-| `.\sync-db.ps1` | Gera tipos TypeScript do banco |
-| `npx supabase start` | Sobe Supabase local |
-| `npx supabase db reset` | Reset + aplica migrations |
+| Script                  | Descrição                                       |
+| ----------------------- | ----------------------------------------------- |
+| `pnpm dev`              | Dev server (todos os apps)                      |
+| `pnpm build`            | Build de produção                               |
+| `pnpm lint`             | ESLint em todo o monorepo                       |
+| `pnpm check-types`      | Type-check em todos os packages                 |
+| `pnpm test`             | Vitest em modo watch                            |
+| `pnpm test:run`         | Vitest single run (CI)                          |
+| `pnpm format`           | Prettier em tudo                                |
+| `pnpm clean`            | Remove node_modules e builds de todo o monorepo |
+| `pnpm sync-db:win`      | Gera tipos TypeScript do banco (Windows)        |
+| `pnpm sync-db:unix`     | Gera tipos TypeScript do banco (Mac/Linux)      |
+| `npx supabase start`    | Sobe Supabase local                             |
+| `npx supabase db reset` | Reset + aplica migrations                       |
 
 ---
 
@@ -182,8 +190,54 @@ npx supabase db reset
 
 ---
 
+## Arquivos Deletáveis
+
+Este template é projetado para ser agnóstico e anti-lock-in. Se você não usar certas tecnologias, pode deletar os arquivos correspondentes:
+
+### Se não usar Supabase:
+
+- Delete `apps/web/middleware.ts`
+- Remova imports de `@repo/supabase` do seu código
+- Delete o package `@repo/supabase` se não for usado em nenhum app
+
+### Se não usar Tailwind:
+
+- Delete `apps/web/postcss.config.mjs`
+- Remova `@import "@repo/tailwind-config/globals.css"` do `app/layout.tsx`
+- Delete o package `@repo/tailwind-config` se não for usado em nenhum app
+
+### O que NÃO deletar (DNA mínimo):
+
+- `apps/web/package.json` - Todo projeto precisa
+- `apps/web/tsconfig.json` - Todo projeto TS precisa
+- `apps/web/next.config.mjs` - Config básica do Next.js
+- `apps/web/app/layout.tsx` - Next.js exige
+- `apps/web/app/page.tsx` - Next.js exige
+- `apps/web/env.ts` - Validação de env (universal)
+
+---
+
 ## Documentação Complementar
 
 - [`supabase/SCHEMA.md`](./supabase/SCHEMA.md) — Banco de dados e protocolo de tabelas
 - [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) — Guias de escala para projetos MEGA-TECH
-- [`apps/web/env.example`](./apps/web/env.example) — Variáveis de ambiente necessárias
+- [`apps/web/.env.example`](./apps/web/.env.example) — Variáveis de ambiente necessárias
+
+---
+
+## FAQ / Troubleshooting
+
+### ❓ Tipos Desatualizados do Supabase?
+
+Certifique-se que o `SUPABASE_PROJECT_ID` está no `.env` e rode o script de sync:
+
+- Windows: `pnpm sync-db:win`
+- Mac/Linux: `pnpm sync-db:unix`
+
+### ❓ Build falhando no CI?
+
+Verifique se todas as envs do `env.ts` estão presentes nas variáveis do GitHub/Vercel. O t3-env trava o build se faltar algo.
+
+### ❓ Conflito de Cache?
+
+Rode `pnpm clean` para remover node_modules e builds de todo o monorepo.
