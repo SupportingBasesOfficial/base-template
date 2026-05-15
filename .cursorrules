@@ -5,7 +5,26 @@
 - **Proatividade:** Se detectar inconsistências entre o código e o banco, proponha a correção imediatamente. Não espere ordens para validar integridade.
 - **Modo Agentic:** No modo 'Act', sinta-se encorajado a sugerir a execução de [./sync-db.ps1](cci:7://file:///e:/Projects/_templates/base-template/sync-db.ps1:0:0-0:0) ou comandos `npx supabase` para validar suas próprias suposições técnicas.
 
-## 🔄 Fluxo de Pensamento Obrigatório
+## � Nomenclatura e Idioma
+- **Código (100% Inglês):**
+  - Variáveis, funções, classes, interfaces: inglês
+  - Ex: `const userCount`, `function getUserById()`, `class UserRepository`
+  - Nomes de arquivos: kebab-case em inglês
+  - Ex: `user-repository.ts`, `api-client.ts`
+- **Comentários (Português):**
+  - Explicações de lógica: português
+  - Ex: `// Calcula o total com imposto aplicado`
+- **Mensagens de Erro (Português):**
+  - Erros para usuário final: português
+  - Ex: `throw new Error("Usuário não encontrado")`
+- **Constantes (UPPER_SNAKE_CASE em inglês):**
+  - Ex: `const MAX_RETRIES = 3`, `const API_BASE_URL`
+- **Consistência Absoluta:**
+  - NUNCA misture idiomas no código
+  - NUNCA use português em nomes de variáveis/funções
+  - NUNCA use inglês em comentários explicativos
+
+## �🔄 Fluxo de Pensamento Obrigatório
 - **Ordem:** Análise → Planejamento → Validação → Execução
 - **Análise:** Entenda o contexto, leia ARCHITECTURE.md, verifique database.types.ts, examine código existente
 - **Planejamento:** Proponha solução, considere trade-offs, verifique impacto no monorepo
