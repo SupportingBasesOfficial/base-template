@@ -1,0 +1,24 @@
+# CODEOWNERS — define revisores automáticos por path.
+#
+# Cada entrada no formato: <path> <owner1> <owner2>
+# O GitHub solicita review automaticamente dos owners quando um PR altera arquivos no path.
+
+# Default — todo o repositório
+* @SupportingBasesOfficial
+
+# Infraestrutura e CI/CD
+/.github/ @SupportingBasesOfficial
+/turbo.json @SupportingBasesOfficial
+/package.json @SupportingBasesOfficial
+
+# Configuração de banco
+/supabase/ @SupportingBasesOfficial
+/sync-db.mjs @SupportingBasesOfficial
+
+# UI e componentes
+/packages/ui/ @SupportingBasesOfficial
+
+# Documentação
+/docs/ @SupportingBasesOfficial
+/README.md @SupportingBasesOfficial
+/CONTRIBUTING.md @SupportingBasesOfficial

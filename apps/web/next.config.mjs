@@ -7,6 +7,7 @@ const withBundleAnalyzer = bundleAnalyzer({
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  ...(process.env.BUILD_STANDALONE === "true" ? { output: "standalone" } : {}),
   transpilePackages: ["@repo/ui", "@repo/supabase", "@repo/tailwind-config", "@repo/logger"],
   async headers() {
     return [

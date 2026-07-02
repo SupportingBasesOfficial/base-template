@@ -4,9 +4,38 @@ import { Toaster } from "@repo/ui";
 import { ThemeProvider } from "@/components/theme-provider";
 
 export const metadata = {
-  title: "Base Template",
+  title: {
+    default: "Base Template",
+    template: "%s — Base Template",
+  },
   description:
     "Base Template Universal - Monorepo Turborepo + Next.js + Supabase",
+  applicationName: "Base Template",
+  authors: [{ name: "SupportingBases" }],
+  keywords: [
+    "monorepo",
+    "turborepo",
+    "next.js",
+    "supabase",
+    "typescript",
+    "template",
+  ],
+  openGraph: {
+    type: "website",
+    locale: "pt_BR",
+    title: "Base Template Universal",
+    description: "Monorepo Turborepo + Next.js 15 + Supabase + TypeScript",
+    siteName: "Base Template",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Base Template Universal",
+    description: "Monorepo Turborepo + Next.js 15 + Supabase + TypeScript",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 export default function RootLayout({
