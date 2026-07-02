@@ -6,13 +6,17 @@
   "types": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts",
-    "./lib/utils": "./src/lib/utils.ts"
+    "./lib/utils": "./src/lib/utils.ts",
+    "./button": "./src/button.tsx",
+    "./card": "./src/card.tsx"
   },
   "scripts": {
     "check-types": "tsc --noEmit",
     "lint": "eslint src --max-warnings 0"
   },
   "dependencies": {
+    "@radix-ui/react-slot": "^1.1.2",
+    "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "tailwind-merge": "^3.3.0"
   },
