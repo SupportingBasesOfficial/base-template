@@ -1,8 +1,6 @@
 /**
- * Configuração PostCSS para Tailwind.
- * 
- * Importa o preset compartilhado do @repo/tailwind-config.
- * 
+ * Configuração PostCSS para Tailwind v3.
+ *
  * DELETÁVEL: Se você não usar Tailwind, pode deletar este arquivo.
  */
 export default {

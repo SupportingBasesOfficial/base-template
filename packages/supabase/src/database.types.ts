@@ -1,8 +1,8 @@
 /**
- * database.types.ts — Gerado automaticamente por sync-db.ps1
+ * database.types.ts — Gerado automaticamente por sync-db.mjs (Supabase Cloud)
  *
  * NÃO EDITE MANUALMENTE.
- * Execute .\sync-db.ps1 após qualquer `supabase db reset` para regenerar.
+ * Execute `pnpm sync-db` após qualquer `npx supabase db push` para regenerar.
  *
  * Este arquivo é a fonte de verdade TypeScript do schema do banco.
  * Qualquer alteração no banco que não seja refletida aqui é um bug esperando acontecer.

@@ -19,8 +19,7 @@
     "test:run": "vitest run",
     "prepare": "husky",
     "clean": "rimraf **/node_modules **/.next **/dist .turbo",
-    "sync-db:win": "powershell ./sync-db.ps1",
-    "sync-db:unix": "chmod +x ./sync-db.sh && ./sync-db.sh"
+    "sync-db": "node sync-db.mjs"
   },
   "devDependencies": {
     "@vitest/ui": "^4.1.5",
@@ -44,6 +43,6 @@
   },
   "packageManager": "pnpm@9.0.0",
   "engines": {
-    "node": ">=18"
+    "node": ">=22"
   }
 }

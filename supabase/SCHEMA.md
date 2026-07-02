@@ -19,10 +19,10 @@ erDiagram
     %% ============================================================================
     %% BASE TEMPLATE UNIVERSAL - BANCO LIMPO
     %% ============================================================================
-    %% 
+    %%
     %% Este template NÃO contém tabelas de negócio.
     %% Apenas extensões e funções globais estão configuradas.
-    %% 
+    %%
     %% Quando você criar sua primeira tabela, atualize este diagrama seguindo
     %% o padrão Mermaid ER Diagram.
     %% ============================================================================
@@ -36,7 +36,7 @@ erDiagram
     %% ============================================================================
     %% EXEMPLO DE COMO ADICIONAR SUA PRIMEIRA TABELA:
     %% ============================================================================
-    %% 
+    %%
     %% SUA_TABELA {
     %%     uuid id PK "Chave primária"
     %%     uuid user_id FK "Referência ao auth.users"
@@ -44,7 +44,7 @@ erDiagram
     %%     timestamp criado_em "Timestamp de criação"
     %%     timestamp atualizado_em "Timestamp de atualização (trigger)"
     %% }
-    %% 
+    %%
     %% SUA_TABELA ||--o{ AUTH_USERS : "pertence a"
     %% ============================================================================
 ```
@@ -53,11 +53,11 @@ erDiagram
 
 ## 🛠️ Extensões Instaladas
 
-| Extensão | Versão | Schema | Descrição |
-|----------|--------|--------|-----------|
-| **uuid-ossp** | Latest | `extensions` | Geração de UUIDs (v4) para chaves primárias |
-| **pg_net** | Latest | `extensions` | Requisições HTTP assíncronas (webhooks, integrações) |
-| **vector** (pgvector) | Latest | `extensions` | Suporte a embeddings e busca semântica (IA/ML) |
+| Extensão              | Versão | Schema       | Descrição                                            |
+| --------------------- | ------ | ------------ | ---------------------------------------------------- |
+| **uuid-ossp**         | Latest | `extensions` | Geração de UUIDs (v4) para chaves primárias          |
+| **pg_net**            | Latest | `extensions` | Requisições HTTP assíncronas (webhooks, integrações) |
+| **vector** (pgvector) | Latest | `extensions` | Suporte a embeddings e busca semântica (IA/ML)       |
 
 ---
 
@@ -68,6 +68,7 @@ erDiagram
 **Descrição:** Atualiza automaticamente o campo `atualizado_em` em qualquer tabela.
 
 **Uso:**
+
 ```sql
 -- Adicione este trigger em todas as tabelas que rastreiam modificações
 CREATE TRIGGER set_timestamp
@@ -77,6 +78,7 @@ EXECUTE FUNCTION update_timestamp();
 ```
 
 **Exemplo Completo:**
+
 ```sql
 CREATE TABLE exemplo (
     id UUID PRIMARY KEY DEFAULT extensions.uuid_generate_v4(),
@@ -101,6 +103,7 @@ EXECUTE FUNCTION update_timestamp();
 Tabela de autenticação gerenciada automaticamente pelo Supabase Auth.
 
 **Campos Principais:**
+
 - `id` (UUID) - Chave primária
 - `email` (TEXT) - Email do usuário
 - `created_at` (TIMESTAMPTZ) - Data de criação
@@ -118,11 +121,13 @@ Tabela de autenticação gerenciada automaticamente pelo Supabase Auth.
 Quando você criar sua primeira tabela:
 
 1. **SEMPRE habilite RLS:**
+
    ```sql
    ALTER TABLE sua_tabela ENABLE ROW LEVEL SECURITY;
    ```
 
 2. **Crie políticas apropriadas:**
+
    ```sql
    -- Exemplo: Usuários só veem seus próprios dados
    CREATE POLICY "Users can view their own data"
@@ -144,11 +149,13 @@ Quando você criar sua primeira tabela:
 ### Como Criar Sua Primeira Tabela
 
 1. **Nunca use SQL manual.** Sempre gere uma migration:
-   ```powershell
+
+   ```bash
    npx supabase migration new create_sua_tabela
    ```
 
 2. **Edite o arquivo gerado em `./supabase/migrations/`:**
+
    ```sql
    CREATE TABLE sua_tabela (
        id UUID PRIMARY KEY DEFAULT extensions.uuid_generate_v4(),
@@ -174,14 +181,16 @@ Quando você criar sua primeira tabela:
    EXECUTE FUNCTION update_timestamp();
    ```
 
-3. **Aplique a migration:**
-   ```powershell
-   npx supabase db reset
+3. **Aplique a migration ao Supabase Cloud:**
+
+   ```bash
+   npx supabase db push
    ```
 
 4. **Sincronize os tipos TypeScript:**
-   ```powershell
-   .\sync-db.ps1
+
+   ```bash
+   pnpm sync-db
    ```
 
 5. **Atualize este SCHEMA.md:**

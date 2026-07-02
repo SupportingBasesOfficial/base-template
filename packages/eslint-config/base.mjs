@@ -2,6 +2,7 @@ import tseslint from '@typescript-eslint/eslint-plugin'
 import tsparser from '@typescript-eslint/parser'
 import react from 'eslint-plugin-react'
 import reactHooks from 'eslint-plugin-react-hooks'
+import security from 'eslint-plugin-security'
 
 const baseConfig = [
   {
@@ -20,6 +21,7 @@ const baseConfig = [
       '@typescript-eslint': tseslint,
       react: react,
       'react-hooks': reactHooks,
+      security: security,
     },
     settings: {
       react: {
@@ -35,6 +37,8 @@ const baseConfig = [
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
       'react/react-in-jsx-scope': 'off',
       'react/prop-types': 'off',
+      // SAST leve — detecta padrões inseguros comuns no código-fonte
+      ...security.configs.recommended.rules,
     },
   },
 ]
