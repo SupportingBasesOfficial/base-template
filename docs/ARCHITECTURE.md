@@ -29,10 +29,38 @@ Regra de Ouro: Componentes em @repo/ui devem ser "burros" e puros. Eles não pos
 
 Composição: A lógica de negócio reside no apps/, que compõe os primitivos do @repo/ui. Isso permite que o design system seja compartilhado entre um App de Vendas e um Painel Administrativo com necessidades visuais distintas.
 
+Componentes inclusos no template: Button (cva + Radix Slot, 6 variants × 4 sizes) e Card (Header, Title, Description, Content, Footer). CSS variables HSL (neutral base, light/dark) em @repo/tailwind-config/globals.css. Tailwind config mapeia cores para as CSS variables. Adicione mais componentes via `npx shadcn@latest add <component>`.
+
 4. Segurança e Isolamento (Multi-tenancy)
    Para escala Enterprise, o isolamento de dados é nativo via Row Level Security (RLS).
 
 Escalabilidade: Toda query ao banco deve ser filtrada por user_id ou tenant_id no nível do banco (RLS), e não na aplicação. Isso garante que, mesmo com um bug no front-end, o dado de um cliente nunca vaze para outro.
+
+4.1 Segurança como DNA (Built-in)
+
+O template inclui segurança de base sem exigir ação do desenvolvedor:
+
+- SAST Leve: eslint-plugin-security integrado no @repo/eslint-config. Detecta padrões inseguros (eval, child_process, regex DoS) em todo commit.
+- Gestão de Dependências: Dependabot ativo monitora vulnerabilidades em todas as dependências npm e GitHub Actions semanalmente.
+- Auditoria de Dependências: pnpm audit roda no CI a cada push e PR, falhando em vulnerabilidades de nível alto.
+- Type Safety como Defesa: database.types.ts proíbe queries a tabelas inexistentes ou colunas erradas. O TypeScript é a primeira camada anti-alucinação.
+- Validação de Env Vars: t3-env falha no build-time se variáveis críticas estiverem ausentes. Nunca em runtime.
+- Auth Centralizada: @repo/supabase middleware gerencia sessão SSR. Route handler /auth/callback completa o loop OAuth. Nenhum app precisa reimplementar autenticação.
+- RLS Obrigatório: Protocolo em SCHEMA.md exige RLS em toda tabela. Sem exceções.
+- 100% Cloud Workflow: Sem Docker local. Supabase Cloud, Vercel, GitHub Codespaces. Dev container na nuvem.
+- Security Headers: next.config.mjs define X-Frame-Options (DENY), X-Content-Type-Options (nosniff), Referrer-Policy, Permissions-Policy. Aplicados em todas as rotas.
+- Error Boundaries: error.tsx captura erros de runtime em Server Components com fallback e botão de retry. not-found.tsx substitui 404 genérica. loading.tsx fornece fallback durante streaming.
+
+  4.2 Segurança como Guideline (Documentação)
+
+Práticas que devem ser seguidas mas não são código de template:
+
+- Validação de Input (OWASP): Use Zod para validar todo input externo (forms, query params, API payloads). Nunca confie em dados do cliente.
+- Tratamento de Erros Sem Vazamento: Error boundaries e Result Pattern garantem que erros internos nunca exponham stack traces ou dados sensíveis ao usuário final.
+- Logs Seguros: Nunca logue senhas, tokens, PII ou dados sensíveis. Use o @repo/logger (quando implementado) com redação automática.
+- Princípio do Menor Privilégio: RLS políticas devem conceder apenas o necessário. SELECT quando só precisa ler. Não conceda ALL sem justificativa.
+- Rate Limiting: Para APIs públicas, configure rate limiting no middleware ou gateway. Next.js middleware suporta implementação simples com Upstash Redis.
+- HTTPS/TLS: Garantido pela infra (Vercel/Supabase). Nunca desabilite TLS em qualquer ambiente.
 
 5. DX (Developer Experience) e Rigor Técnico
 
@@ -87,21 +115,21 @@ Se `SUPABASE_URL` não estiver definida, o Next.js **nem sobe**. Isso evita 90% 
 
 ### Configurações pnpm e Gerenciamento de Dependências
 
-**Por que `.npmrc` está vazio?**
+**Por que `.npmrc` tem `auto-install-peers=true`?**
 
-O arquivo `.npmrc` na raiz do projeto está propositalmente vazio. Isso é uma decisão técnica deliberada para manter o template universal e seguro.
+O pnpm por padrão NÃO instala `peerDependencies` automaticamente. Em um monorepo com ESLint 9 + plugins React + Next.js, isso gera warnings constantes de peer deps não resolvidas. A configuração `auto-install-peers=true` resolve isso sem comprometer segurança:
 
-**Defaults do pnpm são otimizados para monorepos:**
+- Instala apenas peer deps declaradas (não é hoisting)
+- Não cria phantom dependencies (diferente de `shamefully-hoist`)
+- Mantém a estrutura estrita de `node_modules` do pnpm
 
-- Estrutura estrita de `node_modules` (evita "phantom dependencies")
-- Validação rigorosa de `peerDependencies`
-- Workspace resolution automática via `pnpm-workspace.yaml`
+**Por que `strict-peer-dependencies=false`?**
+
+Plugins ESLint como `eslint-plugin-react` ainda não declararam compatibilidade formal com ESLint 10 em seus `peerDependencies`. Sem essa flag, o pnpm bloquearia a instalação. A flag permite instalar com warning, sem comprometer o runtime.
 
 **Por que NÃO usar `shamefully-hoist=true`?**
 
 `shamefully-hoist` move dependências para o `node_modules` raiz, criando uma estrutura similar ao npm tradicional. Isso parece conveniente, mas compromete segurança:
-
-**Problemas de `shamefully-hoist`:**
 
 - Cria "phantom dependencies" — dependências que funcionam mas não estão declaradas no `package.json`
 - Perde a garantia estrita de versões que o pnpm oferece
@@ -109,25 +137,12 @@ O arquivo `.npmrc` na raiz do projeto está propositalmente vazio. Isso é uma d
 - Em nível Enterprise (NASA), isso é inaceitável — você quer controle total sobre o que está instalado
 
 **Quando usar `shamefully-hoist`:**
+
 Apenas em edge cases específicos identificados pelo desenvolvedor:
 
 - Ferramentas legadas que não funcionam com estrutura pnpm
 - Problemas de compatibilidade específicos que não têm solução alternativa
 - Adicione localmente no projeto quando identificar o problema, não no template
-
-**Por que NÃO usar `auto-install-peers=true`?**
-
-`auto-install-peers` instala automaticamente `peerDependencies`, o que parece conveniente mas compromete validação:
-
-**Problemas de `auto-install-peers`:**
-
-- Perde validação de peer dependencies
-- Pode instalar versões incompatíveis
-- Quebra o propósito estrito do pnpm
-- Em nível Enterprise, você quer controle total sobre dependências
-
-**Decisão do template:**
-Mantenha defaults seguros do pnpm. Se um projeto específico precisar de configurações especiais, o desenvolvedor adiciona localmente após identificar o problema real.
 
 ---
 
@@ -135,7 +150,7 @@ Mantenha defaults seguros do pnpm. Se um projeto específico precisar de configu
 
 **Por que `turbo.json` é minimalista?**
 
-O `turbo.json` atual define apenas as tarefas essenciais (`build`, `lint`, `check-types`, `dev`) com configurações básicas de cache e dependências. Isso é deliberado:
+O `turbo.json` atual define as tarefas essenciais (`build`, `lint`, `check-types`, `dev`) com configurações básicas de cache e dependências. Isso é deliberado:
 
 **Razões:**
 
@@ -188,8 +203,8 @@ ESLint Flat Config é o futuro do ESLint:
 
 **Estrutura:**
 
-- `@repo/eslint-config/base.mjs` — Configuração base para packages sem React/Next.js
-- `@repo/eslint-config/next.mjs` — Configuração para apps Next.js
+- `@repo/eslint-config/base.mjs` — Configuração base (TypeScript + React + React Hooks + SAST security)
+- `@repo/eslint-config/next.mjs` — Configuração para apps Next.js (base + regras Next.js + core-web-vitals)
 
 **Trade-off:**
 Nova sintaxe vs compatibilidade legada. A decisão é usar Flat Config porque é o futuro e o template é para projetos modernos.
@@ -444,14 +459,63 @@ Se o serviço de recomendações cair, o dashboard continua funcionando.
 
 ## Decisões Arquiteturais (ADRs)
 
-| #   | Decisão                             | Razão                                                       |
-| --- | ----------------------------------- | ----------------------------------------------------------- |
-| 1   | Supabase em vez de Prisma           | Auth + Realtime + Storage integrados. Menos boilerplate.    |
-| 2   | Tailwind v3 em vez de v4            | Estável, maduro, amplamente adotado. v4 ainda em beta.      |
-| 3   | Result Pattern em vez de exceptions | Força tratamento de erro. Compatível com Server Components. |
-| 4   | shadcn/ui em vez de MUI/Chakra      | Componentes copiáveis, sem lock-in. Usa Radix por baixo.    |
-| 5   | Vitest em vez de Jest               | 10x mais rápido, ESM nativo, compatível com Turborepo.      |
-| 6   | t3-env em vez de dotenv manual      | Validação em build-time. Type-safe.                         |
+| #   | Decisão                             | Razão                                                                            |
+| --- | ----------------------------------- | -------------------------------------------------------------------------------- |
+| 1   | Supabase em vez de Prisma           | Auth + Realtime + Storage integrados. Menos boilerplate.                         |
+| 2   | Tailwind v3 em vez de v4            | Estável, maduro, amplamente adotado. v4 ainda em beta.                           |
+| 3   | Result Pattern em vez de exceptions | Força tratamento de erro. Compatível com Server Components.                      |
+| 4   | shadcn/ui em vez de MUI/Chakra      | Componentes copiáveis, sem lock-in. Usa Radix por baixo.                         |
+| 5   | Vitest em vez de Jest               | 10x mais rápido, ESM nativo, compatível com Turborepo.                           |
+| 6   | t3-env em vez de dotenv manual      | Validação em build-time. Type-safe.                                              |
+| 7   | eslint-plugin-security no CI        | SAST leve sem fricção. Detecta padrões inseguros no commit.                      |
+| 8   | Dependabot + pnpm audit             | Gestão automatizada de cadeia de suprimentos. SBOM implícito.                    |
+| 9   | RLS obrigatório em toda tabela      | Isolamento de dados no banco, não na aplicação. Defense in depth.                |
+| 10  | shadcn/ui componentes no template   | Provar o padrão de design system no DNA. Button + Card como vertical slice demo. |
+
+---
+
+### 11. Caminhos de Escala — Segurança Enterprise
+
+Quando o projeto crescer além do MVP e precisar de segurança de nível enterprise:
+
+**Rate Limiting e API Gateway:**
+
+- Use Upstash Redis + Next.js middleware para rate limiting simples
+- Para escala maior, adicione um API Gateway (Cloudflare, Kong) com OAuth 2.0 / JWT
+
+**Observabilidade e Auditoria (SIEM):**
+
+- Integre OpenTelemetry no @repo/logger (ver Guia de Escala #7)
+- Conecte traces a Datadog, Grafana ou Sentry
+- Para SIEM completo, exporte logs estruturados para ferramentas de correlação
+
+**DAST (Análise Dinâmica):**
+
+- Adicione OWASP ZAP ou Burp Suite no pipeline de staging
+- Rode scans automatizados contra o ambiente de preview
+
+**Zero Trust e Microsegmentação:**
+
+- Isole microsserviços em VPCs separadas
+- Exija autenticação entre serviços (service-to-service tokens)
+- Não confie em requisições apenas por estarem na mesma rede
+
+**Confidential Computing (TEEs):**
+
+- Para dados ultra-sensíveis processados em runtime
+- Disponível em clouds específicas (AWS Nitro Enclaves, Azure Confidential Computing)
+- Requer arquitetura dedicada — não aplicável ao template base
+
+**Criptografia Pós-Quântica (PQC):**
+
+- Prematuro para stack web em 2025. Monitorar padronização NIST.
+- Quando disponível em bibliotecas TLS, atualizar sem mudança de código.
+
+**Chaos Security Engineering:**
+
+- Injeção proativa de falhas em produção (estilo Chaos Monkey)
+- Testa se detecção automática responde em segundos
+- Requer equipe dedicada e ambiente de produção estável
 
 ---
 

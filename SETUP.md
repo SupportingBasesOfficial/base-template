@@ -1,7 +1,7 @@
 # SETUP.md — Protocolo de Instanciação de Novo Projeto
 
 > Execute este protocolo completo ao criar qualquer novo projeto a partir do base-template.
-> Cada passo é obrigatório. Nenhum é opcional.
+> 100% Cloud Workflow. Sem Docker local. Sem supabase start.
 
 ---
 
@@ -10,13 +10,12 @@
 O base-template é DNA universal — mente limpa, sem projeto específico.
 Este protocolo garante que cada projeto instanciado nasce com:
 
-- A corrente de type-safety fechada (DB → tipos → services → UI)
-- Contexto AI funcionando (`.windsurfrules` + `.cursorrules`)
-- CI completo (lint → types → build → test)
+- A corrente de type-safety fechada (DB Cloud → tipos → services → UI)
+- CI completo (lint → audit → types → build → test)
+- Deploy automático na Vercel
+- Dev environment via GitHub Codespaces
 - Documentação viva do banco (`supabase/SCHEMA.md`)
-- Workflow de sync de tipos (`sync-db.ps1`)
-
-Sem seguir este protocolo, o projeto nasce com pontas soltas estruturais.
+- Workflow de sync de tipos (`pnpm sync-db`)
 
 ---
 
@@ -24,13 +23,13 @@ Sem seguir este protocolo, o projeto nasce com pontas soltas estruturais.
 
 ### Passo 1 — Scaffold do repositório
 
-```powershell
-# Clone ou copie o base-template
+```bash
+# Clone ou fork o base-template
 git clone <base-template-url> <nome-do-projeto>
 cd <nome-do-projeto>
 
 # Reinicialize o git
-Remove-Item -Recurse -Force .git
+rm -rf .git
 git init
 git branch -m main
 ```
@@ -53,8 +52,8 @@ Copiar o template abaixo e preencher os campos marcados com `[...]`:
 
 ## Contexto deste Workspace
 
-Instanciado do base-template em: E:\Projects_templates\base-template
-Regras universais de stack: E:\Projects_templates\base-template\.windsurfrules
+Instanciado do base-template
+Regras universais de stack: .windsurfrules do base-template
 
 ## Fontes de Conhecimento
 
@@ -67,7 +66,7 @@ Regras universais de stack: E:\Projects_templates\base-template\.windsurfrules
 
 ## Fontes de Verdade
 
-- database.types.ts — gerado por .\sync-db.ps1 — nunca editar manualmente
+- database.types.ts — gerado por pnpm sync-db — nunca editar manualmente
 - supabase/migrations/ — fonte de verdade do schema
 - supabase/SCHEMA.md — documentação viva do banco
 ```
@@ -75,53 +74,84 @@ Regras universais de stack: E:\Projects_templates\base-template\.windsurfrules
 - [ ] `.windsurfrules` criado e preenchido
 - [ ] `.cursorrules` criado (versão compacta do mesmo conteúdo)
 
-### Passo 4 — Supabase e banco
+### Passo 4 — Supabase Cloud
 
-```powershell
-# Inicializar Supabase local
-npx supabase init
+```bash
+# 1. Criar projeto no Supabase Cloud
+#    https://supabase.com/dashboard > New Project
 
-# Atualizar project_id em supabase/config.toml
-# project_id = "nome-do-projeto"
+# 2. Obter credenciais:
+#    - Project URL: Settings > API > Project URL
+#    - Anon Key: Settings > API > Project API Keys > anon
+#    - Project Ref: Settings > General > Reference ID
+
+# 3. Atualizar project_id em supabase/config.toml
+#    project_id = "nome-do-projeto"
+
+# 4. Login na Supabase CLI (interativo ou token)
+npx supabase login
+
+# 5. Linkar projeto local ao cloud
+npx supabase link --project-ref <seu-project-ref>
 ```
 
+- [ ] Projeto Supabase Cloud criado
 - [ ] `supabase/config.toml` com `project_id` correto
-- [ ] `supabase/SCHEMA.md` criado (usar o scaffold do base-template)
-- [ ] `sync-db.ps1` com caminhos corretos para o projeto
+- [ ] `supabase/SCHEMA.md` atualizado
+- [ ] Supabase CLI linkada ao projeto cloud
 
 ### Passo 5 — Variáveis de ambiente
 
 - [ ] `apps/web/.env.example` com todas as variáveis necessárias
-- [ ] `apps/admin/.env.example` com todas as variáveis (incluindo `SUPABASE_SERVICE_ROLE_KEY`) - se criar apps/admin
-- [ ] Copiar `.env.example` para `.env` e preencher com valores locais
+- [ ] Copiar `.env.example` para `.env` e preencher com valores do Supabase Cloud
+- [ ] Adicionar secrets no GitHub: Settings > Codespaces > Secrets
+- [ ] Adicionar envs na Vercel: Project Settings > Environment Variables
 
-**Nota sobre arquivos de ambiente:**
+**Variáveis obrigatórias:**
 
-- `.env.example` - Blueprint público, commitado no git (sem valores reais)
-- `.env` - Arquivo de desenvolvimento local, **nunca commitado** (contém secrets reais)
-- `.env.local` - Opcional para sobrescrever valores locais, **nunca commitado**
-- Os scripts `sync-db.ps1` e `sync-db.sh` aceitam tanto `.env` quanto `.env.local`
+| Variável                        | Onde encontrar                          |
+| ------------------------------- | --------------------------------------- |
+| `NEXT_PUBLIC_SUPABASE_URL`      | Supabase Dashboard > Settings > API     |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase Dashboard > Settings > API     |
+| `SUPABASE_PROJECT_REF`          | Supabase Dashboard > Settings > General |
 
-### Passo 6 — CI
+### Passo 6 — Vercel
+
+```bash
+# Conectar repo à Vercel
+# https://vercel.com/new > Import Git Repository
+
+# OU via CLI:
+vercel link
+vercel env pull
+```
+
+- [ ] Projeto conectado à Vercel
+- [ ] Variáveis de ambiente configuradas na Vercel
+- [ ] `vercel.json` presente na raiz
+
+### Passo 7 — CI
 
 - [ ] `.github/workflows/ci.yml` com placeholder env vars para build
-- [ ] `SKIP_ENV_VALIDATION=true` no step de types e build
 - [ ] `concurrency` group configurado
-- [ ] Node.js version alinhada com OPERATIONS.md do projeto
+- [ ] Node.js version alinhada com `.nvmrc`
 
-### Passo 7 — Primeira execução
+### Passo 8 — Primeira execução (via Codespaces)
 
-```powershell
+```bash
+# Abrir no Codespaces: GitHub > Repo > Code > Codespaces > Create
+
 pnpm install
-npx supabase start
-pnpm test:run        # deve passar
-pnpm check-types     # deve passar
-pnpm lint            # deve passar
+npx supabase db push    # aplica migrations ao cloud
+pnpm sync-db            # sincroniza tipos do cloud
+pnpm test:run           # deve passar
+pnpm check-types        # deve passar
+pnpm lint               # deve passar
 ```
 
 - [ ] Todos os três passando antes do primeiro commit
 
-### Passo 8 — Primeiro commit
+### Passo 9 — Primeiro commit
 
 ```bash
 git add -A
@@ -131,28 +161,32 @@ git push -u origin main
 ```
 
 - [ ] CI passando no GitHub após o push
+- [ ] Vercel deploy automático concluído
 
 ---
 
 ## O que NÃO fazer
 
-- Nunca iniciar desenvolvimento antes de todos os 8 passos estarem completos
+- Nunca iniciar desenvolvimento antes de todos os 9 passos estarem completos
 - Nunca criar tabelas sem migration (`supabase migration new`)
 - Nunca editar `database.types.ts` manualmente
 - Nunca commitar sem `pnpm check-types && pnpm lint && pnpm test:run` passando
 - Nunca contaminar o base-template com regras ou código específicos de projeto
+- Nunca usar `npx supabase start` — use Supabase Cloud diretamente
+- Nunca use `npx supabase db reset` — use `npx supabase db push` para cloud
 
 ---
 
 ## Referência Rápida pós-instanciação
 
-| Ação                 | Comando                                           |
-| -------------------- | ------------------------------------------------- |
-| Dev                  | `pnpm dev`                                        |
-| Build                | `pnpm build`                                      |
-| Testes               | `pnpm test:run`                                   |
-| Type check           | `pnpm check-types`                                |
-| Nova migration       | `supabase migration new YYYYMMDDHHMMSS_descricao` |
-| Sync tipos           | `.\sync-db.ps1` (após `supabase db reset`)        |
-| Subir Supabase local | `npx supabase start`                              |
-| Reset banco          | `npx supabase db reset`                           |
+| Ação              | Comando                                          |
+| ----------------- | ------------------------------------------------ |
+| Dev (Codespace)   | `pnpm dev`                                       |
+| Build             | `pnpm build`                                     |
+| Testes            | `pnpm test:run`                                  |
+| Type check        | `pnpm check-types`                               |
+| Nova migration    | `npx supabase migration new YYYYMMDDHHMMSS_desc` |
+| Aplicar migration | `npx supabase db push`                           |
+| Sync tipos        | `pnpm sync-db`                                   |
+| Deploy (manual)   | `vercel --prod`                                  |
+| Abrir Codespace   | GitHub > Repo > Code > Codespaces > Create       |

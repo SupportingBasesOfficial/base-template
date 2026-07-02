@@ -1,51 +1,52 @@
 # Base Template Universal
 
-> Monorepo Turborepo + Next.js 15 + Supabase + TypeScript.  
+> Monorepo Turborepo + Next.js 15 + Supabase + TypeScript.
+> 100% Cloud Workflow. Zero local dev.
 > Do vendedor de brigadeiro ao sistema da NASA — mesma fundação.
 
 ---
 
 ## Stack
 
-| Camada    | Tecnologia              | Papel                                         |
-| --------- | ----------------------- | --------------------------------------------- |
-| **Build** | Turborepo               | Orquestração de monorepo                      |
-| **App**   | Next.js 15.3            | Framework React (App Router)                  |
-| **UI**    | shadcn/ui + Tailwind v3 | Design system (Radix primitives)              |
-| **Data**  | Supabase                | PostgreSQL + Auth + Storage + Realtime        |
-| **Types** | TypeScript 5.9          | Tipagem end-to-end com tipos gerados do banco |
-| **Test**  | Vitest                  | Test runner com cobertura V8                  |
-| **DX**    | Husky + lint-staged     | Pre-commit guards                             |
-| **CI**    | GitHub Actions          | lint → types → build → test                   |
+| Camada     | Tecnologia              | Papel                                         |
+| ---------- | ----------------------- | --------------------------------------------- |
+| **Build**  | Turborepo               | Orquestração de monorepo                      |
+| **App**    | Next.js 15              | Framework React (App Router)                  |
+| **UI**     | Tailwind v3 + shadcn/ui | Design system (Button, Card, cn)              |
+| **Data**   | Supabase Cloud          | PostgreSQL + Auth + Storage + Realtime        |
+| **Types**  | TypeScript 5.9          | Tipagem end-to-end com tipos gerados do banco |
+| **Test**   | Vitest                  | Test runner com cobertura V8                  |
+| **DX**     | Husky + lint-staged     | Pre-commit guards                             |
+| **CI**     | GitHub Actions          | lint → audit → types → build → test           |
+| **Deploy** | Vercel                  | Auto-deploy on push + preview URLs            |
+| **Dev**    | GitHub Codespaces       | Dev container na nuvem, sem Docker local      |
 
 ---
 
-## Protocolo de Boot
+## Protocolo de Boot (100% Cloud)
 
-```powershell
-# 1. Clone e instale
-git clone <repo-url> && cd base-template
+```bash
+# 1. Clone ou abra no GitHub Codespaces
+#    Botão "Code" > "Codespaces" > "Create codespace on main"
+#    O devcontainer instala Node 22, pnpm, Supabase CLI e Vercel CLI automaticamente
+
+# 2. Instale dependências (auto no postCreateCommand)
 pnpm install
 
-# 2. Suba o Supabase local (requer Docker)
-npx supabase start
-
 # 3. Configure variáveis de ambiente
+#    No GitHub: Settings > Codespaces > Secrets
+#    OU copie .env.example para .env e preencha:
 cp apps/web/.env.example apps/web/.env
-# Preencha NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY
+#    NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, SUPABASE_PROJECT_REF
 
-**Nota sobre arquivos de ambiente:**
-- `.env.example` - Blueprint público, commitado no git (sem valores reais)
-- `.env` - Arquivo de desenvolvimento local, **nunca commitado** (contém secrets reais)
-- `.env.local` - Opcional para sobrescrever valores locais, **nunca commitado**
-- Os scripts `sync-db` aceitam tanto `.env` quanto `.env.local`
+# 4. Aplique migrations ao Supabase Cloud
+npx supabase db push
 
-# 4. Aplique migrations e sincronize tipos
-npx supabase db reset
-.\sync-db.ps1
+# 5. Sincronize tipos TypeScript do banco cloud
+pnpm sync-db
 
-# 5. Desenvolva
-pnpm dev          # http://localhost:3000
+# 6. Rode o dev server (dentro do Codespace)
+pnpm dev          # Codespaces faz port forwarding automatico
 ```
 
 ---
@@ -54,42 +55,44 @@ pnpm dev          # http://localhost:3000
 
 ```
 base-template/
+├── .devcontainer/              # GitHub Codespaces config
+│   ├── devcontainer.json       # Extensions, settings, ports
+│   └── Dockerfile              # Supabase CLI + Vercel CLI
+├── .github/
+│   ├── workflows/ci.yml        # CI pipeline
+│   └── dependabot.yml          # Dependency monitoring
 ├── apps/
-│   └── web/                        # Next.js App Router
+│   └── web/                    # Next.js App Router
 │       ├── app/
-│       │   ├── api/health/         # Health check endpoint
-│       │   ├── layout.tsx          # Root layout
-│       │   └── page.tsx            # Landing page
-│       ├── env.ts                  # Validação de env (build-time)
-│       ├── middleware.ts           # Auth session refresh
-│       ├── postcss.config.mjs      # Tailwind config
-│       ├── tsconfig.json           # TypeScript config
-│       ├── next.config.mjs         # Next.js config
-│       └── package.json            # Dependencies
-│
+│       │   ├── api/health/     # Health check endpoint
+│       │   ├── auth/callback/  # OAuth callback (code → session)
+│       │   ├── error.tsx       # Error boundary global
+│       │   ├── layout.tsx      # Root layout
+│       │   ├── loading.tsx     # Loading UI (streaming fallback)
+│       │   ├── not-found.tsx   # Página 404 customizada
+│       │   └── page.tsx        # Landing page (auth-aware Server Component)
+│       ├── env.ts              # Validação de env (build-time)
+│       ├── middleware.ts       # Auth session refresh
+│       └── package.json        # Dependencies
 ├── packages/
-│   ├── supabase/                   # @repo/supabase
-│   │   └── src/
-│   │       ├── client.ts           # createClient() — browser
-│   │       ├── server.ts           # createClient() — server
-│   │       ├── middleware.ts       # updateSession()
-│   │       ├── types.ts            # Result<T>, ok(), err(), Database
-│   │       └── database.types.ts   # Tipos gerados do banco
-│   ├── ui/                         # @repo/ui (primitivos)
-│   │   └── src/
-│   │       └── lib/utils.ts        # cn() utility
-│   ├── tailwind-config/            # @repo/tailwind-config (globals.css)
-│   ├── typescript-config/          # TS configs
-│   └── eslint-config/              # ESLint configs
-│
+│   ├── supabase/               # @repo/supabase (client factories)
+│   ├── ui/                     # @repo/ui (Button, Card, cn)
+│   ├── tailwind-config/        # @repo/tailwind-config (globals.css)
+│   ├── typescript-config/      # @repo/typescript-config (tsconfigs)
+│   └── eslint-config/          # @repo/eslint-config (flat config + SAST)
 ├── supabase/
-│   ├── migrations/                 # Migrations versionadas
-│   └── SCHEMA.md                   # Documentação do banco
-│
-├── .github/workflows/ci.yml        # CI pipeline
-├── vitest.config.ts                # Config global de testes
-├── sync-db.ps1                     # Sync de tipos
-└── docs/ARCHITECTURE.md            # Guias de escala (MEGA-TECH)
+│   ├── migrations/             # Migrations versionadas
+│   ├── config.toml             # Config cloud (sem Docker local)
+│   └── SCHEMA.md               # Documentação do banco
+├── docs/ARCHITECTURE.md        # Guias de escala (MEGA-TECH)
+├── LICENSE                     # MIT License
+├── sync-db.mjs                 # Sync tipos via Supabase Cloud
+├── vercel.json                 # Deploy config
+├── turbo.json                  # Orquestração de tasks
+├── vitest.config.ts            # Config global de testes
+├── .vscode/extensions.json     # Recomendações de extensions
+├── .nvmrc                      # Node version (22)
+└── .npmrc                      # Config pnpm (auto-install-peers)
 ```
 
 ---
@@ -124,120 +127,122 @@ async function getUser(id: string): Promise<Result<User>> {
 
 ### `@repo/ui`
 
-Utilitário de composição de classes (cn). Adicione componentes primitivos (Button, Card, Input) conforme necessário seguindo o padrão shadcn/ui.
+Componentes primitivos shadcn/ui (new-york style) + utilitário `cn()`.
+
+Componentes inclusos: **Button** (6 variants × 4 sizes, suporte `asChild`), **Card** (Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter).
+
+CSS variables HSL (neutral base) em `@repo/tailwind-config/globals.css` com suporte light/dark.
 
 ```typescript
 import { cn } from "@repo/ui/lib/utils";
+import { Button, Card, CardContent, CardHeader, CardTitle } from "@repo/ui";
+
+// Adicionar mais componentes via shadcn CLI:
+// npx shadcn@latest add input dialog label
 ```
-
-### `@repo/tailwind-config`
-
-Base CSS compartilhada. Cada app importa via postcss.config.mjs. Adicione tokens de design específicos do projeto ao instanciar.
 
 ---
 
-## Fluxo de Desenvolvimento
+## Fluxo de Desenvolvimento (Cloud)
+
+### Auth SSR (Supabase)
+
+O template inclui o loop completo de autenticação SSR:
+
+1. **Middleware** (`middleware.ts`) — atualiza sessão em toda request via `@repo/supabase/middleware`
+2. **Server Components** — chamam `createClient()` de `@repo/supabase/server` para ler a sessão
+3. **OAuth Callback** (`/auth/callback`) — troca `code` por sessão e redireciona
+4. **Landing page** — demo auth-aware: mostra email se logado, mensagem se não logado
+
+Para habilitar OAuth (Google, GitHub, etc):
+
+```bash
+# Supabase Dashboard → Authentication → Providers
+# Ative o provider desejado e configure:
+#   Redirect URL: {APP_URL}/auth/callback
+```
 
 ### Criar uma tabela
 
-```powershell
+```bash
 # 1. Gerar migration
 npx supabase migration new create_minha_tabela
 
 # 2. Editar (seguir protocolo do SCHEMA.md)
-# 3. Aplicar
-npx supabase db reset
 
-# 4. Sync tipos
-.\sync-db.ps1
+# 3. Aplicar ao Supabase Cloud
+npx supabase db push
+
+# 4. Sync tipos TypeScript
+pnpm sync-db
 
 # 5. Atualizar SCHEMA.md
 ```
 
-### Adicionar componente UI
+### Deploy
 
-Adicione componentes primitivos (Button, Card, Input) em `packages/ui/src/` seguindo o padrão shadcn/ui quando necessário para o seu projeto. O template fornece apenas o utilitário `cn()` para composição de classes.
+```bash
+# Automático: push para main deploy para produção na Vercel
+# Preview: PRs geram preview URLs automaticamente
+
+# Manual (se necessário):
+vercel --prod
+```
 
 ---
 
 ## Scripts
 
-| Script                  | Descrição                                       |
-| ----------------------- | ----------------------------------------------- |
-| `pnpm dev`              | Dev server (todos os apps)                      |
-| `pnpm build`            | Build de produção                               |
-| `pnpm lint`             | ESLint em todo o monorepo                       |
-| `pnpm check-types`      | Type-check em todos os packages                 |
-| `pnpm test`             | Vitest em modo watch                            |
-| `pnpm test:run`         | Vitest single run (CI)                          |
-| `pnpm format`           | Prettier em tudo                                |
-| `pnpm clean`            | Remove node_modules e builds de todo o monorepo |
-| `pnpm sync-db:win`      | Gera tipos TypeScript do banco (Windows)        |
-| `pnpm sync-db:unix`     | Gera tipos TypeScript do banco (Mac/Linux)      |
-| `npx supabase start`    | Sobe Supabase local                             |
-| `npx supabase db reset` | Reset + aplica migrations                       |
+| Script                 | Descrição                                       |
+| ---------------------- | ----------------------------------------------- |
+| `pnpm dev`             | Dev server (dentro do Codespace)                |
+| `pnpm build`           | Build de produção                               |
+| `pnpm lint`            | ESLint + SAST em todo o monorepo                |
+| `pnpm check-types`     | Type-check em todos os packages                 |
+| `pnpm test`            | Vitest em modo watch                            |
+| `pnpm test:run`        | Vitest single run (CI)                          |
+| `pnpm format`          | Prettier em tudo                                |
+| `pnpm clean`           | Remove node_modules e builds de todo o monorepo |
+| `pnpm sync-db`         | Gera tipos TypeScript do banco Cloud            |
+| `npx supabase db push` | Aplica migrations ao Supabase Cloud             |
 
 ---
 
 ## Princípios
 
 1. **YAGNI** — Se não serve ao brigadeiro E à NASA no dia 1, não entra no código.
-2. **Migrations** — Zero SQL manual. Toda mudança via `supabase/migrations/`.
-3. **RLS** — Toda tabela com Row Level Security. Sem exceção.
-4. **Tipos** — `database.types.ts` é a fonte de verdade. `any` é proibido.
-5. **Packages** — Código compartilhado vive em `packages/`, nunca duplicado em `apps/`.
-6. **Env seguro** — Variáveis validadas no build. Se faltar, o app não sobe.
-
----
-
-## Arquivos Deletáveis
-
-Este template é projetado para ser agnóstico e anti-lock-in. Se você não usar certas tecnologias, pode deletar os arquivos correspondentes:
-
-### Se não usar Supabase:
-
-- Delete `apps/web/middleware.ts`
-- Remova imports de `@repo/supabase` do seu código
-- Delete o package `@repo/supabase` se não for usado em nenhum app
-
-### Se não usar Tailwind:
-
-- Delete `apps/web/postcss.config.mjs`
-- Remova `@import "@repo/tailwind-config/globals.css"` do `app/layout.tsx`
-- Delete o package `@repo/tailwind-config` se não for usado em nenhum app
-
-### O que NÃO deletar (DNA mínimo):
-
-- `apps/web/package.json` - Todo projeto precisa
-- `apps/web/tsconfig.json` - Todo projeto TS precisa
-- `apps/web/next.config.mjs` - Config básica do Next.js
-- `apps/web/app/layout.tsx` - Next.js exige
-- `apps/web/app/page.tsx` - Next.js exige
-- `apps/web/env.ts` - Validação de env (universal)
+2. **100% Cloud** — Sem Docker local. Sem supabase start. Tudo via cloud.
+3. **Migrations** — Zero SQL manual. Toda mudança via `supabase/migrations/`.
+4. **RLS** — Toda tabela com Row Level Security. Sem exceção.
+5. **Tipos** — `database.types.ts` é a fonte de verdade. `any` é proibido.
+6. **Packages** — Código compartilhado vive em `packages/`, nunca duplicado em `apps/`.
+7. **Env seguro** — Variáveis validadas no build. Se faltar, o app não sobe.
 
 ---
 
 ## Documentação Complementar
 
+- [`SETUP.md`](./SETUP.md) — Protocolo de instanciação de novos projetos
 - [`supabase/SCHEMA.md`](./supabase/SCHEMA.md) — Banco de dados e protocolo de tabelas
 - [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) — Guias de escala para projetos MEGA-TECH
 - [`apps/web/.env.example`](./apps/web/.env.example) — Variáveis de ambiente necessárias
 
 ---
 
-## FAQ / Troubleshooting
+## FAQ
 
-### ❓ Tipos Desatualizados do Supabase?
+### Tipos Desatualizados do Supabase?
 
-Certifique-se que o `SUPABASE_PROJECT_ID` está no `.env` e rode o script de sync:
+```bash
+pnpm sync-db    # Sincroniza do Supabase Cloud
+```
 
-- Windows: `pnpm sync-db:win`
-- Mac/Linux: `pnpm sync-db:unix`
+Certifique-se que `SUPABASE_PROJECT_REF` está definido no `.env`.
 
-### ❓ Build falhando no CI?
+### Build falhando no CI?
 
 Verifique se todas as envs do `env.ts` estão presentes nas variáveis do GitHub/Vercel. O t3-env trava o build se faltar algo.
 
-### ❓ Conflito de Cache?
+### Como abrir no Codespaces?
 
-Rode `pnpm clean` para remover node_modules e builds de todo o monorepo.
+GitHub > Repo > "Code" > "Codespaces" > "Create codespace on main". O `.devcontainer` configura tudo automaticamente.
