@@ -2,6 +2,7 @@ import "@repo/tailwind-config/globals.css";
 import { Toaster } from "@repo/ui";
 
 import { ThemeProvider } from "@/components/theme-provider";
+import { WebVitalsReporter } from "./web-vitals";
 
 export const metadata = {
   title: {
@@ -36,6 +37,7 @@ export const metadata = {
     index: true,
     follow: true,
   },
+  manifest: "/manifest.json",
 };
 
 export default function RootLayout({
@@ -54,6 +56,7 @@ export default function RootLayout({
         >
           {children}
           <Toaster />
+          <WebVitalsReporter />
         </ThemeProvider>
       </body>
     </html>
