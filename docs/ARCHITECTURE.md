@@ -525,3 +525,69 @@ Quando o projeto crescer além do MVP e precisar de segurança de nível enterpr
 - **APIs sem frontend** (use Hono ou Fastify direto)
 - **Apps mobile-only** (use Expo com Supabase diretamente)
 - **Sistemas legados** que exigem SQL Server/Oracle (mas o Repository Pattern ajuda na migração)
+
+---
+
+## Arquitetura Multi-Tenant (Sob Demanda)
+
+Este template suporta multi-tenancy sem refatoração estrutural. Ative quando precisar.
+
+### Estratégia: Row-Level Security (RLS) com `tenant_id`
+
+A estratégia recomendada usa RLS do Postgres (Supabase) — zero código de aplicação para isolamento.
+
+#### 1. Schema (Migration)
+
+```sql
+-- Adiciona tenant_id em todas as tabelas de negócio
+ALTER TABLE users ADD COLUMN tenant_id UUID REFERENCES tenants(id);
+
+-- Política RLS: usuário só vê dados do seu tenant
+CREATE POLICY tenant_isolation ON users
+  USING (tenant_id = (auth.jwt() ->> 'tenant_id')::UUID);
+```
+
+#### 2. JWT Custom Claims
+
+Configure no Supabase Auth > JWT Hooks para injetar `tenant_id` no token:
+
+```json
+{
+  "tenant_id": "uuid-do-tenant"
+}
+```
+
+#### 3. Query automática
+
+O RLS filtra automaticamente — nenhum `WHERE tenant_id = ?` no código.
+
+```typescript
+// Sem mudança no código — RLS filtra automaticamente
+const { data } = await supabase.from("users").select("*");
+// data contém apenas usuários do tenant do usuário logado
+```
+
+#### 4. Middleware (opcional)
+
+Para validação extra no edge:
+
+```typescript
+// Em middleware.ts
+const tenantId = request.headers.get("x-tenant-id");
+if (!tenantId)
+  return NextResponse.redirect(new URL("/select-tenant", request.url));
+```
+
+### Quando NÃO usar multi-tenant
+
+- **Single-tenant SaaS**: Cada cliente tem seu próprio Supabase project
+- **B2C apps**: Usuários individuais, sem organização
+- **Internal tools**: Um único tenant
+
+### Escala: MVP → Enterprise
+
+| Fase       | Estratégia                              | Custo                   |
+| ---------- | --------------------------------------- | ----------------------- |
+| MVP        | Shared schema + RLS                     | $0 (Supabase free tier) |
+| Growth     | Shared schema + RLS + read replicas     | $25/mês                 |
+| Enterprise | Schema-per-tenant ou dedicated projects | $500+/mês               |

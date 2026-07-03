@@ -19,6 +19,8 @@ jobs:
       NEXT_PUBLIC_SUPABASE_URL: "https://supabase.co"
       NEXT_PUBLIC_SUPABASE_ANON_KEY: "placeholder-key"
       SUPABASE_PROJECT_REF: "placeholder-ref"
+      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+      TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
     steps:
       - uses: actions/checkout@v4
 
@@ -26,17 +28,25 @@ jobs:
         uses: pnpm/action-setup@v4
         with:
           run_install: false
-          package_json_file: package.json 
-        # Removido 'version: 9' para usar a versão exata do seu package.json
+          package_json_file: package.json
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22 # Atualizado para Node 22 (LTS moderna)
+          node-version: 22
           cache: "pnpm"
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Cache Turbo
+        uses: actions/cache@v4
+        with:
+          path: .turbo
+          key: turbo-${{ github.ref_name }}-${{ github.sha }}
+          restore-keys: |
+            turbo-${{ github.ref_name }}-
+            turbo-main-
 
       - name: Audit dependencies
         run: pnpm audit --prod --audit-level=high

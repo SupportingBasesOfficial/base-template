@@ -1,0 +1,12 @@
+{
+  "home": {
+    "title": "Base Template Universal",
+    "description": "Monorepo Turborepo + Next.js + Supabase + TypeScript"
+  },
+  "auth": {
+    "login": "Entrar",
+    "logout": "Sair",
+    "authenticated": "Conectado como {email}",
+    "notAuthenticated": "Nenhum usuário autenticado"
+  }
+}
