@@ -20,7 +20,7 @@ import { logger } from "@repo/logger";
 const createUserSchema = z.object({
   email: z.string().email("Email inválido"),
   name: z.string().min(1, "Nome é obrigatório").max(100),
-  metadata: z.record(z.unknown()).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
 });
 
 // Schema de resposta
