@@ -1,4 +1,5 @@
 import { updateSession } from "@repo/supabase/middleware";
+import { createServerClient } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
 
 /**
@@ -26,9 +27,25 @@ export async function middleware(request: NextRequest) {
     return response;
   }
 
-  // Se não tem usuário, redireciona para home
-  const authUser = response.headers.get("x-supabase-auth-user");
-  if (authUser === "false") {
+  // Verifica auth diretamente no middleware (não depende de headers)
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll();
+        },
+        setAll() {},
+      },
+    },
+  );
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
     return NextResponse.redirect(new URL("/", request.url));
   }
 

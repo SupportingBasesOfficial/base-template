@@ -28,7 +28,8 @@ COPY --from=deps /app/packages/*/node_modules ./packages/
 
 COPY . .
 
-# Build do apps/web
+# Build do apps/web (standalone output para Docker)
+ENV BUILD_STANDALONE=true
 RUN pnpm --filter web build
 
 # --- Estágio de produção ---
