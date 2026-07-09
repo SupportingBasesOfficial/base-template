@@ -21,7 +21,15 @@ import {
  *   import WelcomeEmail from "./welcome";
  *   const html = render(<WelcomeEmail userName="João" />);
  */
-export function WelcomeEmail({ userName = "Usuário" }: { userName?: string }) {
+export function WelcomeEmail({
+  userName = "Usuário",
+  dashboardUrl,
+}: {
+  userName?: string;
+  dashboardUrl?: string;
+}) {
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://your-domain.com";
+  const url = dashboardUrl ?? `${siteUrl}/dashboard`;
   return (
     <Html>
       <Head />
@@ -33,7 +41,7 @@ export function WelcomeEmail({ userName = "Usuário" }: { userName?: string }) {
             Obrigado por se cadastrar. Seu conta está pronta para uso.
           </Text>
           <Section style={buttonContainer}>
-            <Button style={button} href="https://your-domain.com/dashboard">
+            <Button style={button} href={url}>
               Acessar Dashboard
             </Button>
           </Section>

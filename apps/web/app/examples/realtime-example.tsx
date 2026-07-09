@@ -34,7 +34,10 @@ export function RealtimeProfilesExample() {
         { event: "*", schema: "public", table: "profiles" },
         (payload) => {
           if (payload.eventType === "INSERT") {
-            setProfiles((prev) => [...prev, payload.new as never]);
+            setProfiles((prev) => [
+              ...prev,
+              payload.new as { id: string; full_name: string | null },
+            ]);
           }
           if (payload.eventType === "DELETE") {
             setProfiles((prev) =>
