@@ -6,37 +6,42 @@ import { createClient } from "@repo/supabase/client";
 /**
  * Exemplo de subscription em tempo real com Supabase Realtime.
  *
- * Escuta mudanças na tabela 'users' e atualiza a UI em tempo real.
+ * Escuta mudanças na tabela 'profiles' e atualiza a UI em tempo real.
  *
  * Substitua a tabela e campos pelos seus.
  */
-export function RealtimeUsersExample() {
-  const [users, setUsers] = useState<Array<{ id: string; name: string }>>([]);
+export function RealtimeProfilesExample() {
+  const [profiles, setProfiles] = useState<
+    Array<{ id: string; full_name: string | null }>
+  >([]);
 
   useEffect(() => {
     const supabase = createClient();
 
     // Carrega dados iniciais
     supabase
-      .from("users")
-      .select("id, name")
+      .from("profiles")
+      .select("id, full_name")
       .then(({ data }) => {
-        if (data) setUsers(data);
+        if (data) setProfiles(data);
       });
 
     // Subscribe para mudanças em tempo real
     const channel = supabase
-      .channel("users-changes")
+      .channel("profiles-changes")
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "users" },
+        { event: "*", schema: "public", table: "profiles" },
         (payload) => {
           if (payload.eventType === "INSERT") {
-            setUsers((prev) => [...prev, payload.new as never]);
+            setProfiles((prev) => [
+              ...prev,
+              payload.new as { id: string; full_name: string | null },
+            ]);
           }
           if (payload.eventType === "DELETE") {
-            setUsers((prev) =>
-              prev.filter((u) => u.id !== (payload.old as { id: string }).id),
+            setProfiles((prev) =>
+              prev.filter((p) => p.id !== (payload.old as { id: string }).id),
             );
           }
         },
@@ -50,8 +55,8 @@ export function RealtimeUsersExample() {
 
   return (
     <ul>
-      {users.map((user) => (
-        <li key={user.id}>{user.name}</li>
+      {profiles.map((profile) => (
+        <li key={profile.id}>{profile.full_name ?? "Sem nome"}</li>
       ))}
     </ul>
   );

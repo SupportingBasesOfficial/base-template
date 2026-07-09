@@ -16,14 +16,14 @@ export const env = createEnv({
   client: {
     NEXT_PUBLIC_SUPABASE_URL: z.string().url(),
     NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1),
-    NEXT_PUBLIC_SENTRY_DSN: z.string().url().optional(),
+    NEXT_PUBLIC_SENTRY_DSN: z.string().url().or(z.literal("")).optional(),
   },
   /**
    * Variáveis de ambiente do lado do servidor
    */
   server: {
-    SUPABASE_PROJECT_REF: z.string().min(1),
-    SENTRY_DSN: z.string().url().optional(),
+    SUPABASE_PROJECT_REF: z.string().optional(),
+    SENTRY_DSN: z.string().url().or(z.literal("")).optional(),
   },
   /**
    * Variáveis de ambiente para runtime (não validadas em build-time)

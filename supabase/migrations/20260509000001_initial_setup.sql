@@ -36,7 +36,7 @@ CREATE EXTENSION IF NOT EXISTS "vector" WITH SCHEMA extensions;
 CREATE OR REPLACE FUNCTION update_timestamp()
 RETURNS TRIGGER AS $$
 BEGIN
-  NEW.atualizado_em = timezone('utc'::text, now());
+  NEW.updated_at = timezone('utc'::text, now());
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
@@ -46,7 +46,7 @@ $$ LANGUAGE plpgsql;
 -- ============================================================================
 
 COMMENT ON FUNCTION update_timestamp() IS 
-'Função global de auditoria que atualiza automaticamente o campo atualizado_em.
+'Função global de auditoria que atualiza automaticamente o campo updated_at.
 Deve ser usada como trigger em todas as tabelas que rastreiam modificações.';
 
 -- ============================================================================

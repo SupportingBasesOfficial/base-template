@@ -391,9 +391,7 @@ Para rastrear requests em produção:
 export async function register() {
   if (process.env.NEXT_RUNTIME === "nodejs") {
     const { NodeSDK } = await import("@opentelemetry/sdk-node");
-    const sdk = new NodeSDK({
-      /* config */
-    });
+    const sdk = new NodeSDK({/* config */});
     sdk.start();
   }
 }
@@ -459,18 +457,21 @@ Se o serviço de recomendações cair, o dashboard continua funcionando.
 
 ## Decisões Arquiteturais (ADRs)
 
-| #   | Decisão                             | Razão                                                                            |
-| --- | ----------------------------------- | -------------------------------------------------------------------------------- |
-| 1   | Supabase em vez de Prisma           | Auth + Realtime + Storage integrados. Menos boilerplate.                         |
-| 2   | Tailwind v3 em vez de v4            | Estável, maduro, amplamente adotado. v4 ainda em beta.                           |
-| 3   | Result Pattern em vez de exceptions | Força tratamento de erro. Compatível com Server Components.                      |
-| 4   | shadcn/ui em vez de MUI/Chakra      | Componentes copiáveis, sem lock-in. Usa Radix por baixo.                         |
-| 5   | Vitest em vez de Jest               | 10x mais rápido, ESM nativo, compatível com Turborepo.                           |
-| 6   | t3-env em vez de dotenv manual      | Validação em build-time. Type-safe.                                              |
-| 7   | eslint-plugin-security no CI        | SAST leve sem fricção. Detecta padrões inseguros no commit.                      |
-| 8   | Dependabot + pnpm audit             | Gestão automatizada de cadeia de suprimentos. SBOM implícito.                    |
-| 9   | RLS obrigatório em toda tabela      | Isolamento de dados no banco, não na aplicação. Defense in depth.                |
-| 10  | shadcn/ui componentes no template   | Provar o padrão de design system no DNA. Button + Card como vertical slice demo. |
+| #   | Decisão                                    | Razão                                                                                                                                                               |
+| --- | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | Supabase em vez de Prisma                  | Auth + Realtime + Storage integrados. Menos boilerplate.                                                                                                            |
+| 2   | Tailwind v3 em vez de v4                   | Estável, maduro, amplamente adotado. v4 ainda em beta.                                                                                                              |
+| 3   | Result Pattern em vez de exceptions        | Força tratamento de erro. Compatível com Server Components.                                                                                                         |
+| 4   | shadcn/ui em vez de MUI/Chakra             | Componentes copiáveis, sem lock-in. Usa Radix por baixo.                                                                                                            |
+| 5   | Vitest em vez de Jest                      | 10x mais rápido, ESM nativo, compatível com Turborepo.                                                                                                              |
+| 6   | t3-env em vez de dotenv manual             | Validação em build-time. Type-safe.                                                                                                                                 |
+| 7   | eslint-plugin-security no CI               | SAST leve sem fricção. Detecta padrões inseguros no commit.                                                                                                         |
+| 8   | Dependabot + pnpm audit                    | Gestão automatizada de cadeia de suprimentos. SBOM implícito.                                                                                                       |
+| 9   | RLS obrigatório em toda tabela             | Isolamento de dados no banco, não na aplicação. Defense in depth.                                                                                                   |
+| 10  | shadcn/ui componentes no template          | Provar o padrão de design system no DNA. Button + Card como vertical slice demo.                                                                                    |
+| 11  | next-intl removido do template             | Dependência instalada mas non-functional configuração incompleta. Removida para evitar peso morto. Reativar via `next-intl` setup guide quando i18n for necessário. |
+| 12  | updateSession retorna `{ response, user }` | Elimina double `getUser()` no middleware. Uma única chamada de auth no edge.                                                                                        |
+| 13  | env.ts importado no next.config.mjs        | Validação de env vars em build-time. Falha fast se variáveis obrigatórias faltam.                                                                                   |
 
 ---
 
@@ -540,10 +541,10 @@ A estratégia recomendada usa RLS do Postgres (Supabase) — zero código de apl
 
 ```sql
 -- Adiciona tenant_id em todas as tabelas de negócio
-ALTER TABLE users ADD COLUMN tenant_id UUID REFERENCES tenants(id);
+ALTER TABLE profiles ADD COLUMN tenant_id UUID REFERENCES tenants(id);
 
 -- Política RLS: usuário só vê dados do seu tenant
-CREATE POLICY tenant_isolation ON users
+CREATE POLICY tenant_isolation ON profiles
   USING (tenant_id = (auth.jwt() ->> 'tenant_id')::UUID);
 ```
 
@@ -563,8 +564,8 @@ O RLS filtra automaticamente — nenhum `WHERE tenant_id = ?` no código.
 
 ```typescript
 // Sem mudança no código — RLS filtra automaticamente
-const { data } = await supabase.from("users").select("*");
-// data contém apenas usuários do tenant do usuário logado
+const { data } = await supabase.from("profiles").select("*");
+// data contém apenas perfis do tenant do usuário logado
 ```
 
 #### 4. Middleware (opcional)
