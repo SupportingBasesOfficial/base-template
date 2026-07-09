@@ -22,7 +22,7 @@ export const env = createEnv({
    * Variáveis de ambiente do lado do servidor
    */
   server: {
-    SUPABASE_PROJECT_REF: z.string().min(1),
+    SUPABASE_PROJECT_REF: z.string().optional(),
     SENTRY_DSN: z.string().url().or(z.literal("")).optional(),
   },
   /**
