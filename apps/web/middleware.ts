@@ -1,5 +1,4 @@
 import { updateSession } from "@repo/supabase/middleware";
-import { createServerClient } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
 
 /**
@@ -15,7 +14,7 @@ import { type NextRequest, NextResponse } from "next/server";
 const publicRoutes = ["/", "/auth/callback"];
 
 export async function middleware(request: NextRequest) {
-  const response = await updateSession(request);
+  const { response, user } = await updateSession(request);
 
   // Verifica se a rota é protegida
   const { pathname } = request.nextUrl;
@@ -27,24 +26,7 @@ export async function middleware(request: NextRequest) {
     return response;
   }
 
-  // Verifica auth diretamente no middleware (não depende de headers)
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
-        setAll() {},
-      },
-    },
-  );
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
+  // Redireciona para home se não estiver autenticado
   if (!user) {
     return NextResponse.redirect(new URL("/", request.url));
   }

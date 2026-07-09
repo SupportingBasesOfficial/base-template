@@ -10,11 +10,13 @@ type CookieOptions = Parameters<
  * updateSession() — Atualiza a sessão do usuário no middleware do Next.js.
  *
  * Deve ser chamado no middleware.ts do app para manter a sessão SSR sincronizada.
+ * Retorna o response e o user para evitar double auth check.
  *
  * Uso em apps/web/middleware.ts:
  *   import { updateSession } from '@repo/supabase/middleware'
  *   export async function middleware(request: NextRequest) {
- *     return await updateSession(request)
+ *     const { response, user } = await updateSession(request)
+ *     // use user para auth checks sem criar um segundo client
  *   }
  */
 export async function updateSession(request: NextRequest) {
@@ -48,7 +50,9 @@ export async function updateSession(request: NextRequest) {
   );
 
   // Obrigatório: não remover. Mantém a sessão de auth atualizada no SSR.
-  await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  return supabaseResponse;
+  return { response: supabaseResponse, user };
 }

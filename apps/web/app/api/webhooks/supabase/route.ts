@@ -34,19 +34,19 @@ export async function POST(request: Request) {
     );
 
     // Exemplo: processar mudança
-    if (payload.type === "INSERT" && payload.table === "users") {
+    if (payload.type === "INSERT" && payload.table === "profiles") {
       // Exemplo: enviar email de boas-vindas
       logger.info(
-        { email: payload.record.email },
-        "Novo usuário criado — enviar email de boas-vindas",
+        { full_name: payload.record.full_name },
+        "Novo perfil criado — enviar email de boas-vindas",
       );
     }
 
-    if (payload.type === "DELETE" && payload.table === "users") {
+    if (payload.type === "DELETE" && payload.table === "profiles") {
       // Exemplo: limpar dados relacionados
       logger.info(
         { id: payload.old_record?.id },
-        "Usuário deletado — limpar dados relacionados",
+        "Perfil deletado — limpar dados relacionados",
       );
     }
 

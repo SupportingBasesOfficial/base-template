@@ -62,7 +62,7 @@ erDiagram
 
 ### `update_timestamp()`
 
-**Descrição:** Atualiza automaticamente o campo `atualizado_em` em qualquer tabela.
+**Descrição:** Atualiza automaticamente o campo `updated_at` em qualquer tabela.
 
 **Uso:**
 
@@ -80,8 +80,8 @@ EXECUTE FUNCTION update_timestamp();
 CREATE TABLE exemplo (
     id UUID PRIMARY KEY DEFAULT extensions.uuid_generate_v4(),
     nome TEXT NOT NULL,
-    criado_em TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now()),
-    atualizado_em TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
+    created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now()),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
 );
 
 -- Adiciona o trigger de atualização automática
@@ -195,8 +195,8 @@ Quando você criar sua primeira tabela:
        id UUID PRIMARY KEY DEFAULT extensions.uuid_generate_v4(),
        user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
        nome TEXT NOT NULL,
-       criado_em TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now()),
-       atualizado_em TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
+       created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now()),
+       updated_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
    );
 
    -- Habilita RLS
